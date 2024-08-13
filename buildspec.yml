@@ -1,0 +1,34 @@
+version: 0.2
+
+phases:
+  install:
+    runtime-versions:
+      python: 3.8
+    commands:
+      - echo "Installing Terraform..."
+      - curl -O https://releases.hashicorp.com/terraform/1.8.3/terraform_1.8.3_linux_amd64.zip
+      - unzip terraform_1.8.3_linux_amd64.zip
+      - mv terraform /usr/local/bin/
+      - terraform --version
+
+  build:
+    commands:
+      - echo "Changing to terraform directory..."
+      - cd terraform
+      
+      - echo "Initializing Terraform with S3 backend..."
+      - terraform init -backend-config="bucket=my-terraform-state-bucket" \
+                        -backend-config="key=path/to/my/terraform.tfstate" \
+                        -backend-config="region=us-west-2" \
+                        -backend-config="dynamodb_table=terraform-lock-table"
+      
+      - echo "Planning Terraform changes..."
+      - terraform plan -out=plan.tfplan
+
+      - echo "Applying Terraform changes..."
+      - terraform apply -auto-approve plan.tfplan
+
+post_build:
+  commands:
+    - echo "Destroying infrastructure if specified..."
+    - if [ "$DESTROY_INFRA" == "true" ]; then terraform destroy -auto-approve; else echo "Skipping destruction"; fi
