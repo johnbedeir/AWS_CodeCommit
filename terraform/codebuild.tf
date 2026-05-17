@@ -1,6 +1,13 @@
+resource "aws_kms_key" "codebuild" {
+  description             = "KMS key for CodeBuild project encryption"
+  deletion_window_in_days = 7
+  enable_key_rotation     = true
+}
+
 resource "aws_codebuild_project" "codebuild" {
-  name          = "${var.project_name}-build"
-  service_role  = aws_iam_role.codebuild_role.arn
+  name           = "${var.project_name}-build"
+  service_role   = aws_iam_role.codebuild_role.arn
+  encryption_key = aws_kms_key.codebuild.arn
   artifacts {
     type = "CODEPIPELINE"
   }
